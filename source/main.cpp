@@ -64,7 +64,6 @@ void lookupCharacterFileHook(uint* result, char* path){
 skyline::arc::Hashes* hashes;
 
 void stub() {}
-
 void runtimePatchMain(void*){
     // wait for nnSdk to finish booting
     nn::os::SleepThread(nn::TimeSpan::FromSeconds(3));
@@ -112,7 +111,7 @@ void runtimePatchMain(void*){
         reinterpret_cast<void*>(lookupCharacterFileHook), 
         (void**) &lookupCharacterFile);
        
-    hashes = new skyline::arc::Hashes();
+    //hashes = new skyline::arc::Hashes();
 
     nn::ro::Initialize();
     A64HookFunction(

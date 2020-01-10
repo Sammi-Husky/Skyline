@@ -4,14 +4,14 @@ namespace skyline {
 namespace Plugin {
 
     void Manager::Init() {
-        skyline::TcpLogger::LogFormat("Initializing plugins...");
+        skyline::TcpLogger::Log("Initializing plugins...");
         std::unordered_map<std::string, PluginInfo> plugins;
         skyline::Utils::walkDirectory("rom:/skyline/plugins", [&plugins](nn::fs::DirectoryEntry const& entry, std::shared_ptr<std::string> path) {
             if(entry.type == nn::fs::DirectoryEntryType_File)
                 plugins[*path] = PluginInfo();
         });
         
-        skyline::TcpLogger::LogFormat("Opening plugins...");
+        skyline::TcpLogger::Log("Opening plugins...");
         for(auto& kv : plugins){
             std::string path = kv.first;
             PluginInfo& plugin = kv.second;
@@ -23,7 +23,8 @@ namespace Plugin {
             nn::fs::GetFileSize(&fileSize, handle);
             nn::fs::CloseFile(handle);
 
-            plugin.Data = memalign(0x1000, fileSize);
+            plugin.Size = fileSize;
+            plugin.Data = memalign(0x1000, plugin.Size);
             skyline::Utils::readFile(path, 0, plugin.Data, plugin.Size);
             skyline::TcpLogger::LogFormat("Read %s", path.c_str());
         }
@@ -58,24 +59,36 @@ namespace Plugin {
 
         memcpy(nrrBin, &nrr, sizeof(nn::ro::NrrHeader));
         
-        skyline::Utils::writeFile("sd:/test.nrr", 0, (void*) nrrBin, nrrSize);
+        //skyline::Utils::writeFile("sd:/test.nrr", 0, (void*) nrrBin, nrrSize);
 
         nn::ro::RegistrationInfo reg;
         Result r = nn::ro::RegisterModuleInfo(&reg, nrrBin);
-        skyline::TcpLogger::LogFormat("Registered the NRR.", r);
+        skyline::TcpLogger::Log("Registered the NRR.");
 
-        skyline::TcpLogger::LogFormat("Loading plugins...");
+        skyline::TcpLogger::Log("Loading plugins...");
         for(auto &kv : plugins){
             PluginInfo& plugin = kv.second;
 
+            // get bss size and allocate
             size_t bufferSize;
             nn::ro::GetBufferSize(&bufferSize, plugin.Data);
-
             void* buffer = memalign(0x1000, bufferSize);
 
-            nn::ro::Module module;
-            r = nn::ro::LoadModule(&module, plugin.Data, buffer, bufferSize, nn::ro::BindFlag_Now);
-            skyline::TcpLogger::LogFormat("Loaded %s", kv.first.c_str(), r);
+            // load module
+            r = nn::ro::LoadModule(&plugin.Module, plugin.Data, buffer, bufferSize, nn::ro::BindFlag_Now);
+            skyline::TcpLogger::LogFormat("Loaded %s", kv.first.c_str());
+
+            if(R_SUCCEEDED(r)){
+                // look up symbol
+                uintptr_t pluginMainAddr;
+                nn::ro::LookupModuleSymbol(&pluginMainAddr, &plugin.Module, "pluginMain");
+
+                // call pluginMain on loaded module
+                reinterpret_cast<void(*)()>(pluginMainAddr)();
+            }
+            else{ 
+                skyline::TcpLogger::LogFormat("LoadModule Failed: %llx", R_VALUE(r)); 
+            }
         }
     }
 

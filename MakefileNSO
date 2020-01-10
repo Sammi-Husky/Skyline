@@ -45,7 +45,8 @@ SOURCES		:= 	source \
 					source/skyline/plugin
 DATA		:=	data
 INCLUDES	:=	include
-
+NO_NACP		:= 1
+NO_ICON		:= 1
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
