@@ -17,7 +17,7 @@ skyline_patch_$(CROSSVER)/*.ips: patches/*.slpatch patches/configs/$(CROSSVER).c
 	python3 scripts/genPatch.py $(CROSSVER)
 
 send: all
-	python3.7 scripts/sendPatch.py $(IP) $(CROSSVER)
+	python scripts/sendPatch.py $(IP) $(CROSSVER)
 
 clean:
 	$(MAKE) clean -f MakefileNSO
