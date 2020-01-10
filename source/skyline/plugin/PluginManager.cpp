@@ -43,7 +43,7 @@ namespace Plugin {
 
         char* nrrBin = (char*) memalign(0x1000, nrrSize);
 
-        skyline::TcpLogger::LogFormat("Calculating hashes...");
+        skyline::TcpLogger::Log("Calculating hashes...");
         std::vector<Utils::Sha256Hash> sortedHashes;
         for(auto& kv : plugins){
             PluginInfo& plugin = kv.second;
